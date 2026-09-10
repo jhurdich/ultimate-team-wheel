@@ -130,7 +130,19 @@ function updateJersey(){
   const rows=[['Color',Math.min(100,45+(top?top[1]:0)*8)],['Tradition',Math.min(100,30+picks.length*6)],['Chaos',Math.min(100,15+(picks.length?((picks[picks.length-1][0].length*7)%55):0))]];
   $('dnaRows').innerHTML=rows.map(r=>`<div class="dna-row"><span>${r[0]}</span><div class="bar"><b style="width:${r[1]}%"></b></div><strong>${r[1]}%</strong></div>`).join('');
 }
-function geoCenter(){const pts=picks.map(p=>locationMap[p[0]]||guessLocation(p[0])).filter(Boolean);if(!pts.length)return ['Everywhere',0,0];const avg=[pts.reduce((s,p)=>s+p[1],0)/pts.length,pts.reduce((s,p)=>s+p[2],0)/pts.length];return pts.map(p=>({p,d:Math.hypot(p[1]-avg[0],(p[2]-avg[1])*Math.cos(avg[0]*Math.PI/180))})).sort((a,b)=>a.d-b.d)[0].p}
+function geoCenter(){
+  const pts=picks.map(p=>locationMap[p[0]]||guessLocation(p[0])).filter(Boolean);
+  if(!pts.length)return ['Everywhere',0,0];
+  // Find the true geographic midpoint, then label it with the nearest known city.
+  // This keeps a North Carolina + Los Angeles result near Oklahoma instead of
+  // incorrectly selecting one of the two picked team cities.
+  const radians=pts.map(p=>{const lat=p[1]*Math.PI/180,lon=p[2]*Math.PI/180;return [Math.cos(lat)*Math.cos(lon),Math.cos(lat)*Math.sin(lon),Math.sin(lat)]});
+  const xyz=radians.reduce((a,p)=>[a[0]+p[0],a[1]+p[1],a[2]+p[2]],[0,0,0]);
+  const lon=Math.atan2(xyz[1],xyz[0]), hyp=Math.hypot(xyz[0],xyz[1]), lat=Math.atan2(xyz[2],hyp), midpoint=[lat*180/Math.PI,lon*180/Math.PI];
+  const catalog=Object.values(cityHints).concat(Object.values(locationMap));
+  const nearest=catalog.map(p=>({p,d:Math.hypot((p[1]-midpoint[0]),(p[2]-midpoint[1])*Math.cos(lat))})).sort((a,b)=>a.d-b.d)[0].p;
+  return [nearest[0],midpoint[0],midpoint[1]];
+}
 function topColors(){const counts={};picks.forEach(p=>[p[1],p[2]].forEach(c=>counts[c]=(counts[c]||0)+1));return Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(x=>x[0]).slice(0,3).concat(['#2469bc','#f2c84b','#101318']).slice(0,3)}
 function buildUltimate(){const center=geoCenter(),city=center[0],lat=center[1],lon=center[2], counts={};picks.forEach(p=>{const key=p[0].split(' ').slice(-1)[0];counts[key]=counts[key]||0;counts[key]++});const entries=Object.entries(counts).sort((a,b)=>b[1]-a[1]);const vibe=entries.length?entries[0][0]:'United';const suffix=['Collective','Athletic Club','Alliance','Legends','Union'][picks.length%5],palette=topColors();$('ultimateName').textContent=`${city} ${vibe} ${suffix}`;$('cityGuess').textContent=`Your ${picks.length} picks cluster closest to ${city}. Top colors from your selected teams are suggested below.`;$('cityMap').src=`https://www.openstreetmap.org/export/embed.html?bbox=${lon-.7}%2C${lat-.45}%2C${lon+.7}%2C${lat+.45}&layer=mapnik&marker=${lat}%2C${lon}`;$('mapLink').href=`https://www.google.com/maps/search/?api=1&query=${lat}%2C${lon}`;$('attractionsLink').href=`https://www.google.com/search?q=${encodeURIComponent(city+' attractions things to do')}`;document.documentElement.style.setProperty('--jersey-main',palette[0]);document.documentElement.style.setProperty('--jersey-secondary',palette[1]);document.documentElement.style.setProperty('--jersey-accent',palette[2]);$('mainColor').value=palette[0];$('trimColor').value=palette[1];$('accentColor').value=palette[2];$('finalWordmark').textContent=city.toUpperCase();const jerseyNumber=String((picks.reduce((a,p)=>a+p[0].length,0)%88)+10).padStart(2,'0');$('finalNumber').textContent=jerseyNumber;$('backNumber').textContent=jerseyNumber;$('jerseyNumber').value=jerseyNumber;$('finalCard').hidden=false;$('finalCard').scrollIntoView({behavior:'smooth',block:'center'});}
 function reveal(){const name=$('firstName').value.trim();if(!name){$('firstName').focus();return}$('backName').textContent=name.toUpperCase();$('nameStep').hidden=true;$('finalMessage').hidden=false;$('finalMessage').innerHTML=`<strong>${name}, meet the ${$('ultimateName').textContent}.</strong><br><span>Your personalized ultimate jersey is ready. ${picks.length} selected leagues, one final identity.</span>`;$('status').textContent='Ultimate';}
