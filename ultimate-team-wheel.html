@@ -50,7 +50,7 @@
       <div class="jersey-head"><div><div class="eyebrow">Your team DNA</div><h2 id="teamName">Waiting on your picks</h2><p id="teamSub">Spin the wheel to start the design.</p></div><div class="badge" id="status">Draft</div></div>
       <div class="dna"><div class="eyebrow">Design mix</div><div id="dnaRows"></div></div>
       <div class="selected-list"><h3>Selected teams</h3><ul id="selectedTeams"><li><span>Waiting for the first round</span><strong>—</strong></li></ul></div>
-      <div class="card-top round-status"><div><div class="eyebrow">Next round · <span id="roundNumber">01</span></div><div class="card-title" id="categoryName">NFL</div></div><div class="progress" id="progress">0 / 10 selected</div></div>
+      <div class="card-top round-status" id="roundStatus" hidden><div><div class="eyebrow">Next round · <span id="roundNumber">02</span></div><div class="card-title" id="categoryName">NBA</div></div><div class="progress" id="progress">1 / 10 selected</div></div>
       <div class="jersey-art"><div class="jersey" id="jersey"><div class="sleeve l"></div><div class="sleeve r"></div><div class="body"><div class="wordmark" id="wordmark">ULTIMATE</div><div class="number" id="number">00</div><div class="hem"></div></div><div class="collar"></div></div></div>
       <div class="swatches" id="swatches"><i style="background:#2469bc"></i><i style="background:#f2c84b"></i><i style="background:#101318"></i></div>
     </div>
@@ -114,7 +114,7 @@ const cityHints={'Arizona':['Phoenix',33.45,-112.07],'Atlanta':['Atlanta',33.75,
 function guessLocation(name){const hit=Object.keys(cityHints).find(city=>name.startsWith(city));return hit?cityHints[hit]:null}
 function renderLabels(){ const teamList=sports[round].teams, dense=teamList.length>18?' dense':'', rings=teamList.length>18?2:1, perRing=Math.ceil(teamList.length/rings); $('labels').innerHTML=teamList.map((t,i)=>{const ring=i%rings, slot=Math.floor(i/rings), angle=slot*360/perRing+(ring?180/perRing:0), radius=rings===2?(ring?125:160):Math.min(160,Math.max(112,wheel.clientWidth*.35)); return `<span class="slice-label${dense}" title="${t[0]}" aria-label="${t[0]}" style="transform:rotate(${angle}deg) translateY(-${radius}px) rotate(${-angle}deg)"><img src="${logoFor(t[0])}" alt="${t[0]} logo" loading="eager" onerror="this.onerror=null;this.src=logoFallback(this.alt.replace(/ logo$/,''))"></span>`}).join(''); }
 function renderChips(){ $('chips').innerHTML=sports.map((s,i)=>`<span class="chip ${i<round?'active':''}">${i<round?'✓ ':''}${s.name}</span>`).join(''); }
-function renderSelected(){const list=$('selectedTeams');if(!picks.length){list.innerHTML='<li><span>Waiting for the first round</span><strong>—</strong></li>';return}list.innerHTML=picks.map(p=>`<li><span>${p[3]}</span><strong>${p[0]}</strong></li>`).join('');}
+function renderSelected(){const list=$('selectedTeams');$('roundStatus').hidden=!picks.length;if(!picks.length){list.innerHTML='<li><span>Waiting for the first round</span><strong>—</strong></li>';return}list.innerHTML=picks.map(p=>`<li><span>${p[3]}</span><strong>${p[0]}</strong></li>`).join('');}
 function updateJersey(){
   const counts={}; picks.forEach(p=>{counts[p[1]]= (counts[p[1]]||0)+1}); const top=Object.entries(counts).sort((a,b)=>b[1]-a[1])[0];
   const main=top?top[0]:'#2469bc', second=picks.length?picks[picks.length-1][2]:'#f2c84b', accent=picks.length>2?picks[1][2]:'#101318';
